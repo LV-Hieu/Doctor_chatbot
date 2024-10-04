@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div id="chat-container">
+        <div id="messages"></div>
+        <div id="typing-indicator" style="display: none;">Chatbot đang phản hồi<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
+        <input type="text" id="user_input" placeholder="Nhập câu hỏi của bạn..." onkeypress="return enterKey(event)">
+        <button id="send_button" onclick="sendMessage()">Gửi</button>
+    </div>
+
+    <script>
+        // Bắt sự kiện khi nhấn phím Enter
+        function enterKey(event) {
+            if (event.keyCode === 13) {
+                sendMessage();
+                return false;
+            }
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById('user_input').value;
+            if (userInput.trim() === '') return;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('user-message');
+            messageDiv.textContent = userInput;
+            document.getElementById('messages').appendChild(messageDiv);
+
+            document.getElementById('user_input').value = '';  // Xóa tin nhắn khỏi thanh nhập
+
+            // Hiển thị dấu ba chấm chuyển động
+            document.getElementById('typing-indicator').style.display = 'block';
+
+            // Gửi yêu cầu đến máy chủ Flask
+            fetch('/get_response', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: userInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('typing-indicator').style.display = 'none';
+
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.classList.add('bot-message');
+                botMessageDiv.textContent = data.response;
+                document.getElementById('messages').appendChild(botMessageDiv);
+
+                // Tự động cuộn xuống dưới cùng khi có tin nhắn mới
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            })
+            .catch(error => {
+                document.getElementById('typing-indicator').style.display = 'none';
+                alert('Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.');
+            });
+        }
+    </script>
+</body>
+</html>
